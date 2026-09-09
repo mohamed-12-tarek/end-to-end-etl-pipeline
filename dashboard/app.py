@@ -1,8 +1,9 @@
 import streamlit as st
 
-from questions import QUESTIONS
+from charts import render_chart
 from database import read_view
-import charts
+from insights import generate_insight
+from questions import QUESTIONS
 
 
 st.set_page_config(
@@ -12,59 +13,91 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-with st.sidebar:
-
-    st.title("📊 Analytics")
-    st.divider()
-
-    category = st.radio(
-        "Business Area",
-        list(QUESTIONS.keys()),
-    )
-
-    st.divider()
-    questions = QUESTIONS[category]
-
-    selected_question = st.selectbox(
-        "Stakeholder Question",
-        list(questions.keys()),
-    )
-
-question_config = questions[selected_question]
-question_text = question_config["question"]
-view_name = question_config["view"]
-chart_name = question_config["chart"]
-
-
-st.title(selected_question)
-
-st.markdown(f"### ❓ {question_text}")
-
-st.divider()
-
 
 @st.cache_data(ttl=300)
-def load_data(view):
-    return read_view(view)
+def load_view(view_name: str):
+    return read_view(view_name)
 
 
-try:
-    df = load_data(view_name)
-except Exception as exc:
-    st.error("Unable to load analytics data.")
-    st.exception(exc)
-    st.stop()
+def render_overview() -> None:
+    st.title("Bike Stores Analytics")
+    st.caption("Business-ready analytics powered by the SQL Server data warehouse.")
 
-chart_function = getattr(
-    charts,
-    chart_name,
-    None,
-)
+    try:
+        df = load_view("dbo.vw_analytics_sales_summary")
+    except Exception as exc:
+        st.error("Unable to load the analytics summary.")
+        st.exception(exc)
+        return
+
+    if df.empty:
+        st.warning("No analytics data is available.")
+        return
+
+    row = df.iloc[0]
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Total Revenue", f"{row['total_revenue']:,.2f}")
+    c2.metric("Total Orders", f"{int(row['total_orders']):,}")
+    c3.metric("Items Sold", f"{int(row['total_items_sold']):,}")
+    c4.metric("Average Order Value", f"{row['average_order_value']:,.2f}")
+
+    st.divider()
+    st.subheader("Explore the business")
+    st.write("Choose a business area from the sidebar, then select a stakeholder question.")
 
 
-if chart_function is None:
-    st.error(f"Chart '{chart_name}' is not implemented.")
-    st.stop()
+def render_question(category: str, question_name: str) -> None:
+    config = QUESTIONS[category][question_name]
 
-fig = chart_function(df)
-st.pyplot(fig, use_container_width=True)
+    st.title(question_name)
+    st.markdown(f"### ❓ {config['question']}")
+    st.divider()
+
+    try:
+        df = load_view(config["view"])
+    except Exception as exc:
+        st.error("Unable to load analytics data.")
+        st.exception(exc)
+        return
+
+    if df.empty:
+        st.warning("No data is available for this question.")
+        return
+
+    try:
+        fig = render_chart(config["chart"], df)
+        st.pyplot(fig, use_container_width=True)
+    except Exception as exc:
+        st.error("Unable to render the selected chart.")
+        st.exception(exc)
+        return
+
+    insight = generate_insight(category, question_name, df)
+    if insight:
+        st.info(f"💡 {insight}")
+
+    with st.expander("View analytics data"):
+        st.dataframe(df, use_container_width=True)
+
+
+with st.sidebar:
+    st.title("📊 Analytics")
+    st.caption("Bike Stores Data Warehouse")
+    st.divider()
+
+    page = st.radio("Navigation", ["Overview", *QUESTIONS.keys()])
+
+    if page != "Overview":
+        st.divider()
+        selected_question = st.selectbox(
+            "Stakeholder Question",
+            list(QUESTIONS[page].keys()),
+        )
+    else:
+        selected_question = None
+
+
+if page == "Overview":
+    render_overview()
+else:
+    render_question(page, selected_question)
