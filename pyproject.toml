@@ -1,0 +1,23 @@
+[project]
+name = "etl-project"
+version = "0.2.0"
+description = "End-to-end batch ETL pipeline using Prefect, Pandas, SQLAlchemy and SQL Server"
+readme = "README.md"
+requires-python = ">=3.14"
+
+dependencies = [
+    "pandas>=3.0.5",
+    "prefect>=3.8.4",
+    "sqlalchemy>=2.0",
+    "pyodbc>=5.1",
+    "python-dotenv>=1.0",
+    "perfect>=0.0.1",
+]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["config", "flow"]
+packages = ["tasks"]
