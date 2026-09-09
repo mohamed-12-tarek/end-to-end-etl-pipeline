@@ -81,6 +81,7 @@ def etl_flow():
     base_dir = Path(__file__).resolve().parent
     data_dir = base_dir / "data"
     sql_dir = base_dir / "sql"
+    analytics_dir = sql_dir / "Analytics"
 
     run_sql_script(sql_dir / "create_olap_schema.sql")
     run_sql_script(sql_dir / "stage_tables.sql")
@@ -97,6 +98,9 @@ def etl_flow():
     update_dim_store()
     reload_fact_table()
 
+
+    for sql_file in sorted(analytics_dir.glob("*.sql")):
+        run_sql_script(sql_file)
 
 if __name__ == "__main__":
     etl_flow()
