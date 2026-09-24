@@ -1,5 +1,10 @@
 # End-to-End ETL Pipeline
 
+
+<img width="1376" height="768" alt="end to end pipeline cover image" src="https://github.com/user-attachments/assets/8b0f1746-fc16-4553-b0a3-20f996b5abf4" />
+
+
+
 A production-style batch ETL and analytics project built around a SQL Server data warehouse. The pipeline demonstrates how raw CSV sources can be ingested, staged, transformed, modeled into an OLAP layer, and exposed through reusable analytics views and a Streamlit dashboard.
 
 ## Project Overview
